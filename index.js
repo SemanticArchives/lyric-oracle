@@ -3,6 +3,8 @@ var apiKey = require('./api_key');
 var http = require("http");
 
 var mongoose = require('mongoose');
+var RateLimiter = require('limiter').RateLimiter;
+var limiter = new RateLimiter(1, 'second');
 
 // Connect to Mongoose/MongoDB
 mongoose.connect('mongodb://localhost/lyrics');
@@ -42,7 +44,7 @@ function openCalaisEnrich (content, cb) {
     };
 
     // Set up the request
-    setTimeout(function() {
+    limiter.removeTokens(1, function(err, remainingRequests) {
       var postRequest = http.request(postOptions, function(res)
       {
           res.setEncoding("utf8");
@@ -57,7 +59,7 @@ function openCalaisEnrich (content, cb) {
       });
       postRequest.write(content);
       postRequest.end();
-    }, 1000);
+    });
 }
 
 //
@@ -79,6 +81,6 @@ Song.find({}, null, function(err, docs) {
           } else {
             console.log('Error! Bad things happening with API call. ' + err);
           }
-        });
+        })
     });
 });
